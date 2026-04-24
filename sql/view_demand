@@ -1,0 +1,66 @@
+-- =============================================================================
+-- views_demand.sql
+-- Pipeline NYC Yellow Taxi -- Project: ny-yellow-taxi-trips
+--
+-- Creates analytical views for demand and customer behavior analysis.
+-- All views read from transformed_data.cleaned_and_filtered and join
+-- with raw_yellowtrips.taxi_zone for borough-level enrichment.
+--
+-- Views created:
+--   1. demand_over_time       -- Daily trip volume and revenue
+--   2. trips_by_borough       -- Pickup demand per NYC borough over time
+--   3. trips_by_hour          -- Hourly demand patterns across all years
+-- =============================================================================
+
+
+-- =============================================================================
+-- View 1: demand_over_time
+-- Daily trip count, average fare, and total revenue.
+-- Use case: time series chart in Looker Studio (trips over time, revenue trend)
+-- =============================================================================
+
+CREATE OR REPLACE VIEW `ny-yellow-taxi-trips.views_fordashboard.demand_over_time` AS
+SELECT
+  DATE(tpep_pickup_datetime)          AS trip_date,
+  COUNT(*)                            AS total_trips,
+  ROUND(AVG(total_amount), 2)         AS avg_fare,
+  ROUND(SUM(total_amount), 2)         AS total_revenue
+FROM `ny-yellow-taxi-trips.transformed_data.cleaned_and_filtered`
+GROUP BY trip_date
+ORDER BY trip_date;
+
+
+-- =============================================================================
+-- View 2: trips_by_borough
+-- Daily trip volume and average fare per pickup borough.
+-- Use case: bar chart or geo map by borough in Looker Studio
+-- =============================================================================
+
+CREATE OR REPLACE VIEW `ny-yellow-taxi-trips.views_fordashboard.trips_by_borough` AS
+SELECT
+  z.Borough                           AS pickup_borough,
+  DATE(t.tpep_pickup_datetime)        AS trip_date,
+  COUNT(*)                            AS total_trips,
+  ROUND(AVG(t.total_amount), 2)       AS avg_fare
+FROM `ny-yellow-taxi-trips.transformed_data.cleaned_and_filtered` t
+LEFT JOIN `ny-yellow-taxi-trips.raw_yellowtrips.taxi_zone` z
+  ON t.PULocationID = z.LocationID
+GROUP BY pickup_borough, trip_date
+ORDER BY trip_date;
+
+
+-- =============================================================================
+-- View 3: trips_by_hour
+-- Trip volume and average fare by hour of day.
+-- Use case: heatmap or bar chart showing peak hours in Looker Studio
+-- =============================================================================
+
+CREATE OR REPLACE VIEW `ny-yellow-taxi-trips.views_fordashboard.trips_by_hour` AS
+SELECT
+  EXTRACT(HOUR FROM tpep_pickup_datetime)   AS pickup_hour,
+  COUNT(*)                                  AS total_trips,
+  ROUND(AVG(total_amount), 2)               AS avg_fare,
+  ROUND(AVG(trip_distance), 2)              AS avg_distance
+FROM `ny-yellow-taxi-trips.transformed_data.cleaned_and_filtered`
+GROUP BY pickup_hour
+ORDER BY pickup_hour;
