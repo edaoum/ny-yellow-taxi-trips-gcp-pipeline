@@ -1,0 +1,118 @@
+-- =============================================================================
+-- views_ml_model.sql
+-- Pipeline NYC Yellow Taxi -- Project: ny-yellow-taxi-trips
+--
+-- BigQuery ML model creation, evaluation, and prediction queries.
+-- Target variable: total_amount (regression)
+-- Model type: Boosted Tree Regressor
+--
+-- Steps:
+--   1. Create the ML dataset table
+--   2. Train the Boosted Tree model
+--   3. Evaluate model performance
+--   4. Inspect feature importance
+--   5. Run sample predictions
+-- =============================================================================
+
+
+-- =============================================================================
+-- Step 1: Create the ML training dataset
+-- Filters to recent trips with reliable payment types only.
+-- payment_type 1 = Credit card, 2 = Cash (total_amount is reliably recorded)
+-- =============================================================================
+
+CREATE OR REPLACE TABLE `ny-yellow-taxi-trips.ml_dataset.trips_ml_data` AS
+SELECT *
+FROM `ny-yellow-taxi-trips.transformed_data.cleaned_and_filtered`
+WHERE
+  tpep_pickup_datetime >= TIMESTAMP('2024-11-01')
+  AND EXTRACT(YEAR FROM tpep_pickup_datetime)
+      BETWEEN 2024 AND EXTRACT(YEAR FROM CURRENT_DATE())
+  AND payment_type IN (1, 2);  -- Card and cash only for reliable total_amount
+
+
+-- =============================================================================
+-- Step 2: Train the Boosted Tree Regressor
+-- Features: trip characteristics and fare components
+-- Target: total_amount
+-- enable_global_explain: allows ML.GLOBAL_EXPLAIN for feature importance
+-- =============================================================================
+
+CREATE OR REPLACE MODEL `ny-yellow-taxi-trips.ml_dataset.yellow_trips_model`
+OPTIONS (
+  model_type          = 'BOOSTED_TREE_REGRESSOR',
+  enable_global_explain = TRUE,
+  input_label_cols    = ['total_amount']
+)
+AS
+SELECT
+  passenger_count,
+  trip_distance,
+  PULocationID,
+  DOLocationID,
+  payment_type,
+  fare_amount,
+  extra,
+  mta_tax,
+  tolls_amount,
+  congestion_surcharge,
+  airport_fee,
+  total_amount
+FROM `ny-yellow-taxi-trips.ml_dataset.trips_ml_data`;
+
+
+-- =============================================================================
+-- Step 3: Evaluate model performance
+-- Returns MAE, MSE, RMSE, R² and explained variance.
+-- Lower MAE/RMSE and higher R² indicate better model performance.
+-- =============================================================================
+
+SELECT *
+FROM ML.EVALUATE(
+  MODEL `ny-yellow-taxi-trips.ml_dataset.yellow_trips_model`
+);
+
+
+-- =============================================================================
+-- Step 4: Feature importance (Global Explain)
+-- Shows which features contribute most to predictions.
+-- Higher attribution = more important feature.
+-- =============================================================================
+
+SELECT *
+FROM ML.GLOBAL_EXPLAIN(
+  MODEL `ny-yellow-taxi-trips.ml_dataset.yellow_trips_model`
+)
+ORDER BY attribution DESC;
+
+
+-- =============================================================================
+-- Step 5: Sample predictions
+-- Runs the model on a sample of trips and compares predicted vs actual.
+-- =============================================================================
+
+SELECT
+  total_amount                                          AS actual_total,
+  predicted_total_amount                                AS predicted_total,
+  ROUND(ABS(total_amount - predicted_total_amount), 2)  AS absolute_error
+FROM ML.PREDICT(
+  MODEL `ny-yellow-taxi-trips.ml_dataset.yellow_trips_model`,
+  (
+    SELECT
+      passenger_count,
+      trip_distance,
+      PULocationID,
+      DOLocationID,
+      payment_type,
+      fare_amount,
+      extra,
+      mta_tax,
+      tolls_amount,
+      congestion_surcharge,
+      airport_fee,
+      total_amount
+    FROM `ny-yellow-taxi-trips.ml_dataset.trips_ml_data`
+    LIMIT 100
+  )
+)
+ORDER BY absolute_error DESC;
