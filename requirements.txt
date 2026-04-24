@@ -1,0 +1,31 @@
+# =============================================================================
+# requirements.txt
+# Pipeline NYC Yellow Taxi — Project: ny-yellow-taxi-trips
+#
+# Python dependencies for all pipeline scripts:
+#   - download_taxi_data.py
+#   - load_raw_trips_data.py
+#   - transform_trips_data.py
+#   - create_datasets.py
+#   - create_ml_dataset_table.py
+#
+# Install with: pip install -r requirements.txt
+# =============================================================================
+
+# --- Google Cloud Platform ---
+google-cloud-bigquery==3.29.0   # BigQuery client — queries, loads, table management
+google-cloud-storage==3.0.0     # GCS client — bucket and blob operations
+google-cloud==0.34.0            # Core GCP meta-package
+google-api-core==2.24.1         # Shared GCP API utilities (retries, auth)
+google-auth==2.38.0             # Google authentication library
+google-cloud-core==2.4.1        # Shared base classes for GCP clients
+
+# --- Data handling ---
+pandas==2.2.3                   # DataFrame operations and CSV handling
+pyarrow==19.0.0                 # Parquet file reading and writing
+
+# --- HTTP ---
+requests==2.32.3                # HTTP requests for downloading Parquet files from NYC TLC
+
+# --- Utilities ---
+numpy==2.2.2                    # Numerical operations (indirect dependency of pandas)

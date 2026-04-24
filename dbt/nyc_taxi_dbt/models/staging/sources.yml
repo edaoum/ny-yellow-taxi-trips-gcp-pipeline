@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: raw_yellowtrips
+    project: ny-yellow-taxi-trips
+    dataset: raw_yellowtrips
+    tables:
+      - name: trips
+        description: "Raw NYC Yellow Taxi trips loaded from GCS"
+      - name: taxi_zone
+        description: "NYC taxi zone lookup table"

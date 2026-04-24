@@ -1,0 +1,25 @@
+# Google Cloud credentials — never commit
+sa-key.json
+*.json
+
+# dbt compiled files
+dbt/nyc_taxi_dbt/target/
+dbt/nyc_taxi_dbt/dbt_packages/
+dbt/nyc_taxi_dbt/logs/
+
+# dbt profiles — contains credentials
+profiles.yml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Archives
+*.tar.gz
+*.zip
+
+# Data files
+*.parquet
+*.csv

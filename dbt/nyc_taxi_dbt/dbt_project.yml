@@ -1,0 +1,17 @@
+name: 'nyc_taxi_dbt'
+version: '1.0.0'
+profile: 'nyc_taxi_dbt'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  nyc_taxi_dbt:
+    staging:
+      +dataset: dbt_staging
+      +materialized: view
+    marts:
+      +dataset: dbt_marts
+      +materialized: table
